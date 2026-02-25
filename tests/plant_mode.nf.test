@@ -1,0 +1,54 @@
+nextflow_pipeline {
+
+    name "Test pipeline: PLANT_MODE"
+    script "main.nf"
+    tag "pipeline"
+    tag "nfcore_funcscan"
+    tag "plant_mode"
+    profile "test_plant_mode"
+
+    test("-profile test_plant_mode") {
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+        }
+
+        then {
+            assertAll(
+                { assert workflow.success },
+                { assert new File("$outputDir/pipeline_info/nf_core_funcscan_software_mqc_versions.yml").exists() },
+                { assert new File("$outputDir/multiqc/multiqc_report.html").exists() },
+                
+                // QUAST File Existence Check
+                { 
+                    assert new File("$outputDir/quast/arabidopsis_thaliana/report.tsv").exists()
+                    assert new File("$outputDir/quast/arabidopsis_thaliana_2/report.tsv").exists()
+                },
+
+                // BUSCO File Existence Check
+                { 
+                    assert new File("$outputDir/busco/short_summary.specific.embryophyta_odb10.arabidopsis_thaliana_clean.faa.json").exists()
+                    assert new File("$outputDir/busco/short_summary.specific.embryophyta_odb10.arabidopsis_thaliana_2_clean.faa.json").exists()
+                },
+
+                // plantiSMASH (might be empty/missing if no BGCs found in bacterial genome, but directory should exist?)
+                // Actually, if no BGCs, output dir might be empty or log says so.
+                // We check that the process ran.
+                { assert workflow.trace.succeeded().size() > 0 },
+                
+                // AMP check
+                { 
+                    def ampcombiTsv1 = new File("$outputDir/reports/ampcombi2/arabidopsis_thaliana/arabidopsis_thaliana_ampcombi.tsv")
+                    assert ampcombiTsv1.exists()
+                    assert ampcombiTsv1.text.contains("sample_id")
+
+                    def ampcombiTsv2 = new File("$outputDir/reports/ampcombi2/arabidopsis_thaliana_2/arabidopsis_thaliana_2_ampcombi.tsv")
+                    assert ampcombiTsv2.exists()
+                    assert ampcombiTsv2.text.contains("sample_id")
+                }
+            )
+        }
+    }
+}

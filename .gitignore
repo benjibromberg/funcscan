@@ -8,3 +8,7 @@ testing*
 *.pyc
 null/
 .nf-test*
+
+# Local dev files
+dev_sync.sh
+.sdkmanrc

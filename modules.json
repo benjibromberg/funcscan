@@ -70,6 +70,11 @@
                         "git_sha": "81880787133db07d9b4c1febd152c090eb8325dc",
                         "installed_by": ["modules"]
                     },
+                    "busco/busco": {
+                        "branch": "master",
+                        "git_sha": "56925dff3062ca9387de65dd763568916b562124",
+                        "installed_by": ["modules"]
+                    },
                     "deeparg/downloaddata": {
                         "branch": "master",
                         "git_sha": "81880787133db07d9b4c1febd152c090eb8325dc",
@@ -188,6 +193,11 @@
                     "pyrodigal": {
                         "branch": "master",
                         "git_sha": "938e803109104e30773f76a7142442722498fef1",
+                        "installed_by": ["modules"]
+                    },
+                    "quast": {
+                        "branch": "master",
+                        "git_sha": "55cca688337cfaec60e8cd32021bb4cd19f3a501",
                         "installed_by": ["modules"]
                     },
                     "rgi/cardannotation": {

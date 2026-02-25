@@ -1,0 +1,3 @@
+sample,fasta,protein,gbk
+arabidopsis_thaliana,/home/benji/test-datasets/arabidopsis_thaliana.fasta.gz,/home/benji/test-datasets/arabidopsis_thaliana.faa,/home/benji/test-datasets/arabidopsis_thaliana.gbk.gz
+arabidopsis_thaliana_2,/home/benji/test-datasets/arabidopsis_thaliana.fasta.gz,/home/benji/test-datasets/arabidopsis_thaliana.faa,/home/benji/test-datasets/arabidopsis_thaliana.gbk.gz

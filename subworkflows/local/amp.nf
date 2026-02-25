@@ -10,10 +10,12 @@ include { AMP_DATABASE_DOWNLOAD                                       } from '..
 include { AMPCOMBI2_PARSETABLES                                       } from '../../modules/nf-core/ampcombi2/parsetables'
 include { AMPCOMBI2_COMPLETE                                          } from '../../modules/nf-core/ampcombi2/complete'
 include { AMPCOMBI2_CLUSTER                                           } from '../../modules/nf-core/ampcombi2/cluster'
+include { AMPCOMBI_ENSURE_CONTIG                                      } from '../../modules/local/ampcombi_ensure_contig'
 include { GUNZIP as GUNZIP_MACREL_PRED ; GUNZIP as GUNZIP_MACREL_ORFS } from '../../modules/nf-core/gunzip/main'
 include { GUNZIP as AMP_GUNZIP_HMMER_HMMSEARCH                        } from '../../modules/nf-core/gunzip/main'
 include { TABIX_BGZIP as AMP_TABIX_BGZIP                              } from '../../modules/nf-core/tabix/bgzip/main'
 include { MERGE_TAXONOMY_AMPCOMBI                                     } from '../../modules/local/merge_taxonomy_ampcombi'
+include { AMPCOMBI_SHINY_COMPAT                                       } from '../../modules/local/ampcombi_shiny_compat'
 
 workflow AMP {
     take:
@@ -104,8 +106,11 @@ workflow AMP {
     ch_input_for_ampcombi = ch_ampresults_for_ampcombi
         .groupTuple()
         .join( ch_faa_for_ampcombi )
-        .join( ch_gbk_for_ampcombi )
-        .join( ch_interpro_for_ampcombi )
+        .join( ch_gbk_for_ampcombi, remainder: true )
+        .join( ch_interpro_for_ampcombi, remainder: true )
+        .map { meta, amp, faa, gbk, interpro ->
+            [ meta, amp, faa, gbk ?: [], interpro ?: [] ]
+        }
         .multiMap{
             input: [ it[0], it[1] ]
             faa: it[2]
@@ -124,35 +129,42 @@ workflow AMP {
     }
     ch_versions = ch_versions.mix( AMPCOMBI2_PARSETABLES.out.versions )
 
-    ch_ampcombi_summaries = AMPCOMBI2_PARSETABLES.out.tsv.map{ it[1] }.collect()
+    // [Plant Mode] Ensure contig_id is present even if GBK locus_tags don't match FASTA
+    AMPCOMBI_ENSURE_CONTIG ( AMPCOMBI2_PARSETABLES.out.tsv )
+    ch_versions = ch_versions.mix( AMPCOMBI_ENSURE_CONTIG.out.versions )
+
+    ch_ampcombi_summaries = AMPCOMBI_ENSURE_CONTIG.out.tsv.map{ it[1] }.collect()
 
     // AMPCOMBI2::COMPLETE
-    ch_summary_count = ch_ampcombi_summaries.map { it.size() }.sum()
+    // Cannot evaluate channel size in a standard Groovy if() statement. Process dynamically.
+    ch_summaries_branch = ch_ampcombi_summaries
+        .branch {
+            multiple: it.size() > 1
+            single: true
+        }
 
-    if ( ch_summary_count == 0 || ch_summary_count == 1 )  {
-        log.warn("[nf-core/funcscan] AMPCOMBI2: ${ch_summary_count} file(s) passed. Skipping AMPCOMBI2_COMPLETE, AMPCOMBI2_CLUSTER, and TAXONOMY MERGING steps.")
-    } else {
-        AMPCOMBI2_COMPLETE(ch_ampcombi_summaries)
-        ch_versions = ch_versions.mix( AMPCOMBI2_COMPLETE.out.versions )
-        ch_ampcombi_complete = AMPCOMBI2_COMPLETE.out.tsv
-                                .filter { file -> file.countLines() > 1 }
-    }
+    AMPCOMBI2_COMPLETE(ch_summaries_branch.multiple)
+    ch_versions = ch_versions.mix( AMPCOMBI2_COMPLETE.out.versions )
+    ch_ampcombi_complete = AMPCOMBI2_COMPLETE.out.tsv
+                            .mix(ch_summaries_branch.single.map{ it -> it[0] })
+                            .filter { file -> file.countLines() > 1 }
 
     // AMPCOMBI2::CLUSTER
-    if ( ch_ampcombi_complete != null )  {
-        AMPCOMBI2_CLUSTER ( ch_ampcombi_complete )
-        ch_versions = ch_versions.mix( AMPCOMBI2_CLUSTER.out.versions )
-    } else {
-        log.warn("[nf-core/funcscan] No AMP hits were found in the samples and so no clustering will be applied.")
-    }
+    // Only runs if ch_ampcombi_complete emitted an item (dynamically handled by Nextflow)
+    AMPCOMBI2_CLUSTER ( ch_ampcombi_complete )
+    ch_versions = ch_versions.mix( AMPCOMBI2_CLUSTER.out.versions )
+
+    // AMPCOMBI_SHINY_COMPAT (Adds missing columns so the dashboard doesn't crash)
+    AMPCOMBI_SHINY_COMPAT ( AMPCOMBI2_CLUSTER.out.cluster_tsv )
+    ch_versions = ch_versions.mix( AMPCOMBI_SHINY_COMPAT.out.versions )
 
     // MERGE_TAXONOMY
-    if ( params.run_taxa_classification && ch_ampcombi_complete == null ) {
-        log.warn("[nf-core/funcscan] No AMP hits were found in the samples, therefore no Taxonomy will be merged ")
-    } else if ( params.run_taxa_classification && ch_ampcombi_complete != null ) {
+    if ( params.run_taxa_classification ) {
+        // Need to join the cluster TSV with the list of mmseqs TSVs
+        // But since there might be one cluster file taking ALL mmseqs TSVs, we pass the TSV list entirely
         ch_mmseqs_taxonomy_list = tsvs.map{ it[1] }.collect()
 
-        MERGE_TAXONOMY_AMPCOMBI( AMPCOMBI2_CLUSTER.out.cluster_tsv, ch_mmseqs_taxonomy_list )
+        MERGE_TAXONOMY_AMPCOMBI( AMPCOMBI_SHINY_COMPAT.out.cluster_tsv, ch_mmseqs_taxonomy_list )
         ch_versions = ch_versions.mix( MERGE_TAXONOMY_AMPCOMBI.out.versions )
 
         ch_tabix_input = Channel.of( [ 'id':'ampcombi_complete_summary_taxonomy' ] )

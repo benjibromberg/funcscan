@@ -16,6 +16,7 @@
 */
 
 include { FUNCSCAN                } from './workflows/funcscan'
+include { PLANT_MINING            } from './workflows/plant_mining'
 include { PIPELINE_INITIALISATION } from './subworkflows/local/utils_nfcore_funcscan_pipeline'
 include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_funcscan_pipeline'
 
@@ -38,11 +39,18 @@ workflow NFCORE_FUNCSCAN {
     //
     // WORKFLOW: Run pipeline
     //
-    FUNCSCAN (
-        samplesheet
-    )
+    if (params.plant_mode) {
+        PLANT_MINING ( samplesheet )
+        multiqc_report = PLANT_MINING.out.multiqc_report
+    } else {
+        FUNCSCAN (
+            samplesheet
+        )
+        multiqc_report = FUNCSCAN.out.multiqc_report
+    }
+
     emit:
-    multiqc_report = FUNCSCAN.out.multiqc_report // channel: /path/to/multiqc_report.html
+    multiqc_report // channel: /path/to/multiqc_report.html
 }
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

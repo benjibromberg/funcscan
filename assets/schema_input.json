@@ -35,11 +35,7 @@
                 "errorMessage": "Input file for feature annotations has incorrect file format. File must end in `.gbk`, `.gbk.gz` or `.gbff`, or `.gbff.gz`"
             }
         },
-        "required": ["sample", "fasta"],
-        "dependentRequired": {
-            "protein": ["gbk"],
-            "gbk": ["protein"]
-        }
+        "required": ["sample", "fasta"]
     },
     "uniqueItems": true
 }

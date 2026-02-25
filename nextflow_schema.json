@@ -1601,9 +1601,63 @@
                     "hidden": true
                 }
             }
+        },
+        "plant_mining_options": {
+            "title": "Plant Mode Options",
+            "type": "object",
+            "description": "Options for running the Plant Mining workflow.",
+            "default": "",
+            "properties": {
+                "plant_mode": {
+                    "type": "boolean",
+                    "description": "Activate Plant Mode workflow.",
+                    "fa_icon": "fas fa-seedling",
+                    "help_text": "Run the dedicated Plant Mining workflow designed for analyzing plant genomes."
+                },
+                "busco_threshold": {
+                    "type": "number",
+                    "default": 90.0,
+                    "description": "Minimum BUSCO completeness score for genome filtering.",
+                    "fa_icon": "fas fa-check-double"
+                },
+                "busco_lineage": {
+                    "type": "string",
+                    "default": "embryophyta_odb10",
+                    "description": "BUSCO lineage dataset to use.",
+                    "fa_icon": "fas fa-database"
+                },
+                "plantismash_clusterblast": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Run ClusterBlast in plantiSMASH.",
+                    "fa_icon": "fas fa-search"
+                },
+                "plantismash_knownclusterblast": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Run KnownClusterBlast in plantiSMASH.",
+                    "fa_icon": "fas fa-search"
+                },
+                "plantismash_subgroup": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Run Subgroup Finder in plantiSMASH.",
+                    "fa_icon": "fas fa-search"
+                },
+                "plantismash_tfbs": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Run Transcription Factor Binding Site Finder in plantiSMASH.",
+                    "fa_icon": "fas fa-search"
+                }
+            },
+            "fa_icon": "fas fa-seedling"
         }
     },
     "allOf": [
+        {
+            "$ref": "#/$defs/plant_mining_options"
+        },
         {
             "$ref": "#/$defs/input_output_options"
         },
