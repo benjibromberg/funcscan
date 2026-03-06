@@ -4,7 +4,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { BUSCO_BUSCO as BUSCO_QC } from '../modules/nf-core/busco/busco/main'
+include { BUSCO_BUSCO as BUSCO_QC   } from '../modules/nf-core/busco/busco/main'
+include { BUSCO_DOWNLOAD_LINEAGE   } from '../modules/local/busco_download_lineage'
 include { QUAST                   } from '../modules/nf-core/quast/main'
 include { WRITE_QUAST_VERSION     } from '../modules/local/write_quast_version'
 include { WRITE_BUSCO_VERSION     } from '../modules/local/write_busco_version'
@@ -56,8 +57,10 @@ workflow PLANT_MINING {
     // -----------------------------------------------------------------------
     
     // 2A. BUSCO on Proteins
+    // Download BUSCO lineage database once, then share with all BUSCO_QC tasks
+    BUSCO_DOWNLOAD_LINEAGE ()
     // Mode 'proteins' is much faster than genome mode for checking gene set completeness
-    BUSCO_QC ( ch_clean_proteomes, "proteins", params.busco_lineage, [], [], [] )
+    BUSCO_QC ( ch_clean_proteomes, "proteins", params.busco_lineage, BUSCO_DOWNLOAD_LINEAGE.out.lineage_dir, [], [] )
     
     // TODO: nf-core is migrating module version emissions to use Nextflow's new `topic: versions` system, 
     // which emits a tuple of `[process, component, version]` rather than a standard `versions.yml` file.
