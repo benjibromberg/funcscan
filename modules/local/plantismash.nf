@@ -112,8 +112,8 @@ PYEOF
         \$INPUT_FILE
 
     cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        plantismash: \$(python3 \$SITE_PACKAGES/run_antismash.py --version | sed 's/antiSMASH //')
-    END_VERSIONS
+	"${task.process}":
+	    plantismash: \$(python3 \$SITE_PACKAGES/run_antismash.py --version | sed 's/antiSMASH //')
+	END_VERSIONS
     """
 }
