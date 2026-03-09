@@ -73,7 +73,31 @@ process PLANTISMASH {
         INPUT_FILE=${genbank}
     fi
 
-    # 6. Run antismash
+    # 6. Sanitize ambiguous amino acid codes in GenBank protein translations
+    # pplacer (used by the subgroup module) crashes on non-standard residues like J (Leu/Ile),
+    # B (Asx), Z (Glx), O (Pyl), U (Sec). Replace them with X (unknown) only within
+    # /translation= qualifier blocks to avoid corrupting gene names and other metadata.
+    # See: https://github.com/plantismash/plantismash/issues/XXX
+    python3 -c "
+import sys
+fn = sys.argv[1]
+in_translation = False
+out_lines = []
+with open(fn, 'r') as f:
+    for line in f:
+        if '/translation=\"' in line:
+            in_translation = True
+            line = line.replace('J','X').replace('B','X').replace('Z','X').replace('O','X').replace('U','X')
+        elif in_translation:
+            if '\"' in line:
+                in_translation = False
+            line = line.replace('J','X').replace('B','X').replace('Z','X').replace('O','X').replace('U','X')
+        out_lines.append(line)
+with open(fn, 'w') as f:
+    f.writelines(out_lines)
+" \$INPUT_FILE
+
+    # 7. Run antismash
     # We copy run_antismash.py to current dir so sys.path[0] is '.'
     # This ensures PYTHONPATH (containing local_pkg) takes precedence over site-packages
     cp \$SITE_PACKAGES/run_antismash.py .
