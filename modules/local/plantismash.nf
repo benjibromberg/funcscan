@@ -77,7 +77,7 @@ process PLANTISMASH {
     # pplacer (used by the subgroup module) crashes on non-standard residues like J (Leu/Ile),
     # B (Asx), Z (Glx), O (Pyl), U (Sec). Replace them with X (unknown) only within
     # /translation= qualifier blocks to avoid corrupting gene names and other metadata.
-    # See: https://github.com/plantismash/plantismash/issues/XXX
+    # See: https://github.com/plantismash/plantismash/issues/50
     python3 -c "
 import sys
 fn = sys.argv[1]
